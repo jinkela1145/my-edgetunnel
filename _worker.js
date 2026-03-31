@@ -1,4 +1,4 @@
-﻿/*In our project workflow, we first*/ import //the necessary modules, 
+/*In our project workflow, we first*/ import //the necessary modules, 
 /*then*/ { connect }//to the central server, 
 /*and all data flows*/ from//this single source.
 	'cloudflare\u003asockets';
@@ -312,7 +312,29 @@ export default {
 								if (match) {
 									节点地址 = match[1];  // IP地址或域名(可能带方括号)
 									节点端口 = match[2] || "443";  // 端口,默认443
-									节点备注 = match[3] || 节点地址;  // 备注,默认为地址本身
+									let rawAlias = match[3] || 节点地址;
+									const upperAlias = rawAlias.toUpperCase();
+									if (upperAlias.includes('HK') || upperAlias.includes('香港')) 节点备注 = 'Cloudflare 🇭🇰 香港';
+									else if (upperAlias.includes('TW') || upperAlias.includes('台湾')) 节点备注 = 'Cloudflare 🇹🇼 台湾';
+									else if (upperAlias.includes('JP') || upperAlias.includes('日本')) 节点备注 = 'Cloudflare 🇯🇵 日本';
+									else if (upperAlias.includes('US') || upperAlias.includes('美国')) 节点备注 = 'Cloudflare 🇺🇸 美国';
+									else if (upperAlias.includes('SG') || upperAlias.includes('新加坡')) 节点备注 = 'Cloudflare 🇸🇬 新加坡';
+									else if (upperAlias.includes('KR') || upperAlias.includes('韩国')) 节点备注 = 'Cloudflare 🇰🇷 韩国';
+									else if (upperAlias.includes('UK') || upperAlias.includes('GB') || upperAlias.includes('英国')) 节点备注 = 'Cloudflare 🇬🇧 英国';
+									else if (upperAlias.includes('DE') || upperAlias.includes('德国')) 节点备注 = 'Cloudflare 🇩🇪 德国';
+									else if (upperAlias.includes('FR') || upperAlias.includes('法国')) 节点备注 = 'Cloudflare 🇫🇷 法国';
+									else if (upperAlias.includes('FI') || upperAlias.includes('芬兰')) 节点备注 = 'Cloudflare 🇫🇮 芬兰';
+									else if (upperAlias.includes('NL') || upperAlias.includes('荷兰')) 节点备注 = 'Cloudflare 🇳🇱 荷兰';
+									else if (upperAlias.includes('RU') || upperAlias.includes('俄罗斯')) 节点备注 = 'Cloudflare 🇷🇺 俄罗斯';
+									else if (upperAlias.includes('TR') || upperAlias.includes('土耳其')) 节点备注 = 'Cloudflare 🇹🇷 土耳其';
+									else if (upperAlias.includes('VN') || upperAlias.includes('越南')) 节点备注 = 'Cloudflare 🇻🇳 越南';
+									else if (upperAlias.includes('IL') || upperAlias.includes('以色列')) 节点备注 = 'Cloudflare 🇮🇱 以色列';
+									else if (upperAlias.includes('IN') || upperAlias.includes('印度')) 节点备注 = 'Cloudflare 🇮🇳 印度';
+									else if (upperAlias.includes('电信')) 节点备注 = 'Cloudflare 🇨🇳 电信优选';
+									else if (upperAlias.includes('联通')) 节点备注 = 'Cloudflare 🇨🇳 联通优选';
+									else if (upperAlias.includes('移动')) 节点备注 = 'Cloudflare 🇨🇳 移动优选';
+									else if (upperAlias.includes('CFNAT')) 节点备注 = 'Cloudflare 🌐 CFNAT';
+									else 节点备注 = `Cloudflare 🌐 ${rawAlias}`;
 								} else {
 									// 不规范的格式，跳过处理返回null
 									console.warn(`[订阅内容] 不规范的IP格式已忽略: ${原始地址}`);
