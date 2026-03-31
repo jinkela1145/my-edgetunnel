@@ -260,6 +260,17 @@ export default {
 							if (!url.searchParams.has('sub') && config_JSON.优选订阅生成.local) { // 本地生成订阅
 								const 完整优选列表 = config_JSON.优选订阅生成.本地IP库.随机IP ? (await 生成随机IP(request, config_JSON.优选订阅生成.本地IP库.随机数量, config_JSON.优选订阅生成.本地IP库.指定端口))[0] : await env.KV.get('ADD.txt') ? await 整理成数组(await env.KV.get('ADD.txt')) : (await 生成随机IP(request, config_JSON.优选订阅生成.本地IP库.随机数量, config_JSON.优选订阅生成.本地IP库.指定端口))[0];
 								const 优选API = [], 优选IP = [], 其他节点 = [];
+								
+								// 🚨 [应急通道] 强行插入日本等稳定区域的优选IP/域名 🚨
+								const 应急节点 = [
+									'104.28.14.162:443#Cloudflare 🇯🇵 日本应急1',
+									'172.67.240.231:443#Cloudflare 🇯🇵 日本应急2',
+									'104.20.157.65:443#Cloudflare 🇯🇵 日本应急3',
+									'jp.cdn.baipiao.eu.org:443#Cloudflare 🇯🇵 日本应急域名',
+									'cf.shanyun.fun:443#Cloudflare 🇯🇵 日本应急域名2'
+								];
+								for (const node of 应急节点) 优选IP.push(node);
+
 								for (const 元素 of 完整优选列表) {
 									if (元素.toLowerCase().startsWith('sub://')) {
 										优选API.push(元素);
