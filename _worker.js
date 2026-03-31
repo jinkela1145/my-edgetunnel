@@ -260,27 +260,6 @@ export default {
 							if (!url.searchParams.has('sub') && config_JSON.优选订阅生成.local) { // 本地生成订阅
 								const 完整优选列表 = config_JSON.优选订阅生成.本地IP库.随机IP ? (await 生成随机IP(request, config_JSON.优选订阅生成.本地IP库.随机数量, config_JSON.优选订阅生成.本地IP库.指定端口))[0] : await env.KV.get('ADD.txt') ? await 整理成数组(await env.KV.get('ADD.txt')) : (await 生成随机IP(request, config_JSON.优选订阅生成.本地IP库.随机数量, config_JSON.优选订阅生成.本地IP库.指定端口))[0];
 								const 优选API = [], 优选IP = [], 其他节点 = [];
-								
-								// 🚨 [自选保障通道] 强行插入经过验证的各国高速优选节点 🚨
-								const 应急节点 = [
-									// 日本 (🇯🇵)
-									'104.28.14.162:443#JP优选',
-									'172.67.240.231:443#JP优选',
-									'jp.cdn.baipiao.eu.org:443#JP优选',
-									// 香港 (🇭🇰)
-									'104.16.223.49:443#HK优选',
-									'104.18.150.37:443#HK优选',
-									'hk.cdn.baipiao.eu.org:443#HK优选',
-									// 新加坡 (🇸🇬)
-									'104.18.2.161:443#SG优选',
-									'104.28.16.29:443#SG优选',
-									'sg.cdn.baipiao.eu.org:443#SG优选',
-									// 美国 (🇺🇸)
-									'162.159.43.36:443#US优选',
-									'104.16.115.34:443#US优选',
-									'us.cdn.baipiao.eu.org:443#US优选'
-								];
-								for (const node of 应急节点) 优选IP.push(node);
 
 								for (const 元素 of 完整优选列表) {
 									if (元素.toLowerCase().startsWith('sub://')) {
@@ -315,6 +294,22 @@ export default {
 								完整优选IP = 完整优选IP.concat(优选生成器IP数组);
 								其他节点LINK += 优选生成器其他节点;
 							}
+							// 🚨 [自选保障通道] 不管走哪条生成路径，都强行插入经过验证的各国高速优选节点 🚨
+							const 保障节点 = [
+								'104.28.14.162:443#JP优选',
+								'172.67.240.231:443#JP优选',
+								'jp.cdn.baipiao.eu.org:443#JP优选',
+								'104.16.223.49:443#HK优选',
+								'104.18.150.37:443#HK优选',
+								'hk.cdn.baipiao.eu.org:443#HK优选',
+								'104.18.2.161:443#SG优选',
+								'104.28.16.29:443#SG优选',
+								'sg.cdn.baipiao.eu.org:443#SG优选',
+								'162.159.43.36:443#US优选',
+								'104.16.115.34:443#US优选',
+								'us.cdn.baipiao.eu.org:443#US优选'
+							];
+							完整优选IP = 完整优选IP.concat(保障节点);
 							const ECHLINK参数 = config_JSON.ECH ? `&ech=${encodeURIComponent((config_JSON.ECHConfig.SNI ? config_JSON.ECHConfig.SNI + '+' : '') + config_JSON.ECHConfig.DNS)}` : '';
 							const isLoonOrSurge = ua.includes('loon') || ua.includes('surge');
 							const 传输协议 = config_JSON.传输协议 === 'xhttp' ? 'xhttp&mode=stream-one' : (config_JSON.传输协议 === 'grpc' ? (config_JSON.gRPC模式 === 'multi' ? 'grpc&mode=multi' : 'grpc&mode=gun') : 'ws');
