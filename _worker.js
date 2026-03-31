@@ -362,9 +362,10 @@ export default {
 									else if (upperAlias.includes('VN') || upperAlias.includes('越南')) baseName = 'Cloudflare 🇻🇳 越南';
 									else if (upperAlias.includes('IL') || upperAlias.includes('以色列')) baseName = 'Cloudflare 🇮🇱 以色列';
 									else if (upperAlias.includes('IN') || upperAlias.includes('印度')) baseName = 'Cloudflare 🇮🇳 印度';
-									else if (upperAlias.includes('电信')) baseName = 'Cloudflare 🇨🇳 电信优选';
-									else if (upperAlias.includes('联通')) baseName = 'Cloudflare 🇨🇳 联通优选';
-									else if (upperAlias.includes('移动')) baseName = 'Cloudflare 🇨🇳 移动优选';
+									else if (upperAlias.includes('SE') || upperAlias.includes('瑞典')) baseName = 'Cloudflare 🇸🇪 瑞典';
+									else if (upperAlias.includes('电信')) { baseName = 'Cloudflare 🇨🇳 电信优选'; suffix = ''; }
+									else if (upperAlias.includes('联通')) { baseName = 'Cloudflare 🇨🇳 联通优选'; suffix = ''; }
+									else if (upperAlias.includes('移动')) { baseName = 'Cloudflare 🇨🇳 移动优选'; suffix = ''; }
 									else if (upperAlias.includes('CFNAT')) baseName = 'Cloudflare 🌐 CFNAT';
 									else baseName = `Cloudflare 🌐 ${rawAlias.replace(/优选|备用|应急|PRO|VIP/gi, '').trim()}`;
 
