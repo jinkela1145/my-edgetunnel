@@ -261,13 +261,24 @@ export default {
 								const 完整优选列表 = config_JSON.优选订阅生成.本地IP库.随机IP ? (await 生成随机IP(request, config_JSON.优选订阅生成.本地IP库.随机数量, config_JSON.优选订阅生成.本地IP库.指定端口))[0] : await env.KV.get('ADD.txt') ? await 整理成数组(await env.KV.get('ADD.txt')) : (await 生成随机IP(request, config_JSON.优选订阅生成.本地IP库.随机数量, config_JSON.优选订阅生成.本地IP库.指定端口))[0];
 								const 优选API = [], 优选IP = [], 其他节点 = [];
 								
-								// 🚨 [自选保障通道] 强行插入经过验证的日本高速节点 🚨
+								// 🚨 [自选保障通道] 强行插入经过验证的各国高速优选节点 🚨
 								const 应急节点 = [
-									'104.28.14.162:443#JP',
-									'172.67.240.231:443#JP',
-									'104.20.157.65:443#JP',
-									'jp.cdn.baipiao.eu.org:443#JP',
-									'cf.shanyun.fun:443#JP'
+									// 日本 (🇯🇵)
+									'104.28.14.162:443#JP优选',
+									'172.67.240.231:443#JP优选',
+									'jp.cdn.baipiao.eu.org:443#JP优选',
+									// 香港 (🇭🇰)
+									'104.16.223.49:443#HK优选',
+									'104.18.150.37:443#HK优选',
+									'hk.cdn.baipiao.eu.org:443#HK优选',
+									// 新加坡 (🇸🇬)
+									'104.18.2.161:443#SG优选',
+									'104.28.16.29:443#SG优选',
+									'sg.cdn.baipiao.eu.org:443#SG优选',
+									// 美国 (🇺🇸)
+									'162.159.43.36:443#US优选',
+									'104.16.115.34:443#US优选',
+									'us.cdn.baipiao.eu.org:443#US优选'
 								];
 								for (const node of 应急节点) 优选IP.push(node);
 
@@ -325,27 +336,39 @@ export default {
 									节点端口 = match[2] || "443";  // 端口,默认443
 									let rawAlias = match[3] || 节点地址;
 									const upperAlias = rawAlias.toUpperCase();
-									if (upperAlias.includes('HK') || upperAlias.includes('香港')) 节点备注 = 'Cloudflare 🇭🇰 香港';
-									else if (upperAlias.includes('TW') || upperAlias.includes('台湾')) 节点备注 = 'Cloudflare 🇹🇼 台湾';
-									else if (upperAlias.includes('JP') || upperAlias.includes('日本')) 节点备注 = 'Cloudflare 🇯🇵 日本';
-									else if (upperAlias.includes('US') || upperAlias.includes('美国')) 节点备注 = 'Cloudflare 🇺🇸 美国';
-									else if (upperAlias.includes('SG') || upperAlias.includes('新加坡')) 节点备注 = 'Cloudflare 🇸🇬 新加坡';
-									else if (upperAlias.includes('KR') || upperAlias.includes('韩国')) 节点备注 = 'Cloudflare 🇰🇷 韩国';
-									else if (upperAlias.includes('UK') || upperAlias.includes('GB') || upperAlias.includes('英国')) 节点备注 = 'Cloudflare 🇬🇧 英国';
-									else if (upperAlias.includes('DE') || upperAlias.includes('德国')) 节点备注 = 'Cloudflare 🇩🇪 德国';
-									else if (upperAlias.includes('FR') || upperAlias.includes('法国')) 节点备注 = 'Cloudflare 🇫🇷 法国';
-									else if (upperAlias.includes('FI') || upperAlias.includes('芬兰')) 节点备注 = 'Cloudflare 🇫🇮 芬兰';
-									else if (upperAlias.includes('NL') || upperAlias.includes('荷兰')) 节点备注 = 'Cloudflare 🇳🇱 荷兰';
-									else if (upperAlias.includes('RU') || upperAlias.includes('俄罗斯')) 节点备注 = 'Cloudflare 🇷🇺 俄罗斯';
-									else if (upperAlias.includes('TR') || upperAlias.includes('土耳其')) 节点备注 = 'Cloudflare 🇹🇷 土耳其';
-									else if (upperAlias.includes('VN') || upperAlias.includes('越南')) 节点备注 = 'Cloudflare 🇻🇳 越南';
-									else if (upperAlias.includes('IL') || upperAlias.includes('以色列')) 节点备注 = 'Cloudflare 🇮🇱 以色列';
-									else if (upperAlias.includes('IN') || upperAlias.includes('印度')) 节点备注 = 'Cloudflare 🇮🇳 印度';
-									else if (upperAlias.includes('电信')) 节点备注 = 'Cloudflare 🇨🇳 电信优选';
-									else if (upperAlias.includes('联通')) 节点备注 = 'Cloudflare 🇨🇳 联通优选';
-									else if (upperAlias.includes('移动')) 节点备注 = 'Cloudflare 🇨🇳 移动优选';
-									else if (upperAlias.includes('CFNAT')) 节点备注 = 'Cloudflare 🌐 CFNAT';
-									else 节点备注 = `Cloudflare 🌐 ${rawAlias}`;
+									
+									// --- 新增：国家/国旗与优选标签动态格式化代码 ---
+									let suffix = '';
+									if (upperAlias.includes('优选') || upperAlias.includes('PRO') || upperAlias.includes('VIP')) {
+										suffix = ' 优选';
+									} else if (upperAlias.includes('应急') || upperAlias.includes('备用')) {
+										suffix = ' 保障';
+									}
+
+									let baseName = '';
+									if (upperAlias.includes('HK') || upperAlias.includes('香港')) baseName = 'Cloudflare 🇭🇰 香港';
+									else if (upperAlias.includes('TW') || upperAlias.includes('台湾')) baseName = 'Cloudflare 🇹🇼 台湾';
+									else if (upperAlias.includes('JP') || upperAlias.includes('日本')) baseName = 'Cloudflare 🇯🇵 日本';
+									else if (upperAlias.includes('US') || upperAlias.includes('美国')) baseName = 'Cloudflare 🇺🇸 美国';
+									else if (upperAlias.includes('SG') || upperAlias.includes('新加坡')) baseName = 'Cloudflare 🇸🇬 新加坡';
+									else if (upperAlias.includes('KR') || upperAlias.includes('韩国')) baseName = 'Cloudflare 🇰🇷 韩国';
+									else if (upperAlias.includes('UK') || upperAlias.includes('GB') || upperAlias.includes('英国')) baseName = 'Cloudflare 🇬🇧 英国';
+									else if (upperAlias.includes('DE') || upperAlias.includes('德国')) baseName = 'Cloudflare 🇩🇪 德国';
+									else if (upperAlias.includes('FR') || upperAlias.includes('法国')) baseName = 'Cloudflare 🇫🇷 法国';
+									else if (upperAlias.includes('FI') || upperAlias.includes('芬兰')) baseName = 'Cloudflare 🇫🇮 芬兰';
+									else if (upperAlias.includes('NL') || upperAlias.includes('荷兰')) baseName = 'Cloudflare 🇳🇱 荷兰';
+									else if (upperAlias.includes('RU') || upperAlias.includes('俄罗斯')) baseName = 'Cloudflare 🇷🇺 俄罗斯';
+									else if (upperAlias.includes('TR') || upperAlias.includes('土耳其')) baseName = 'Cloudflare 🇹🇷 土耳其';
+									else if (upperAlias.includes('VN') || upperAlias.includes('越南')) baseName = 'Cloudflare 🇻🇳 越南';
+									else if (upperAlias.includes('IL') || upperAlias.includes('以色列')) baseName = 'Cloudflare 🇮🇱 以色列';
+									else if (upperAlias.includes('IN') || upperAlias.includes('印度')) baseName = 'Cloudflare 🇮🇳 印度';
+									else if (upperAlias.includes('电信')) baseName = 'Cloudflare 🇨🇳 电信优选';
+									else if (upperAlias.includes('联通')) baseName = 'Cloudflare 🇨🇳 联通优选';
+									else if (upperAlias.includes('移动')) baseName = 'Cloudflare 🇨🇳 移动优选';
+									else if (upperAlias.includes('CFNAT')) baseName = 'Cloudflare 🌐 CFNAT';
+									else baseName = `Cloudflare 🌐 ${rawAlias.replace(/优选|备用|应急|PRO|VIP/gi, '').trim()}`;
+
+									节点备注 = baseName + suffix;
 								} else {
 									// 不规范的格式，跳过处理返回null
 									console.warn(`[订阅内容] 不规范的IP格式已忽略: ${原始地址}`);
