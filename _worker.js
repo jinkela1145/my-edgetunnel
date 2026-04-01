@@ -368,6 +368,10 @@ export default {
 
 								return `${协议类型}://00000000-0000-4000-8000-000000000000@${节点地址}:${节点端口}?security=tls&type=${传输协议 + ECHLINK参数}&${域名字段名}=example.com&fp=${config_JSON.Fingerprint}&sni=example.com&${路径字段名}=${encodeURIComponent(作为优选订阅生成器 ? '/' : (config_JSON.随机路径 ? 随机路径(完整节点路径) : 完整节点路径)) + TLS分片参数}&encryption=none${config_JSON.跳过证书验证 ? '&insecure=1&allowInsecure=1' : ''}#${encodeURIComponent(节点备注)}`;
 							}).filter(item => item !== null).join('\n');
+						} else if (订阅类型 === 'clash' || 订阅类型.startsWith('surge')) { // 原生Clash YAML生成
+							订阅内容 = 生成原生ClashYAML(完整优选IP, 其他节点LINK, config_JSON, 协议类型);
+						} else if (订阅类型 === 'singbox') { // 原生Singbox JSON生成
+							订阅内容 = 生成原生SingboxJSON(完整优选IP, 其他节点LINK, config_JSON, 协议类型);
 						} else { // 订阅转换
 							const 订阅转换URL = `${config_JSON.订阅转换配置.SUBAPI}/sub?target=${订阅类型}&url=${encodeURIComponent(url.protocol + '//' + url.host + '/sub?target=mixed&token=' + 订阅TOKEN + (url.searchParams.has('sub') && url.searchParams.get('sub') != '' ? `&sub=${url.searchParams.get('sub')}` : ''))}&config=${encodeURIComponent(config_JSON.订阅转换配置.SUBCONFIG)}&emoji=false&rename=&scv=${config_JSON.跳过证书验证}`;
 							try {
@@ -3131,7 +3135,225 @@ async function html1101(host, 访问IP) {
     </div><!-- /#cf-wrapper -->
 
      <script>
-    window._cf_translation = {};
+    window._cf_translation = {
+function 生成原生ClashYAML(优选IP列表, 其他节点文本, config, 协议类型) {
+	const proxies = [];
+	const proxyNames = [];
+	const uuid = config.UUID;
+	const host = config.HOST;
+	const path = config.完整节点路径 || '/?ed=2560';
+	const fp = config.Fingerprint || 'chrome';
+	const echEnabled = config.ECH;
+	const echSNI = echEnabled ? config.ECHConfig.SNI : '';
+	const echDNS = echEnabled ? config.ECHConfig.DNS : '';
+
+	// 解析 其他节点文本 中的 vless:// 链接
+	const allLinks = 其他节点文本 ? 其他节点文本.split('\n').filter(l => l.trim()) : [];
+	for (const link of allLinks) {
+		try {
+			const u = new URL(link.replace('vless://', 'http://'));
+			const name = decodeURIComponent(u.hash.slice(1)) || u.hostname;
+			const node = { name, type: 'vless', server: u.hostname.replace(/^\[|\]$/g,''), port: parseInt(u.port) || 443, uuid, tls: true, 'skip-cert-verify': !!config.跳过证书验证, network: 'ws', 'ws-opts': { path, headers: { Host: host } }, 'client-fingerprint': fp, servername: host };
+			if (echEnabled) node['ech-opts'] = { enable: true };
+			proxies.push(node);
+			proxyNames.push(name);
+		} catch(e) {}
+	}
+
+	// 解析 优选IP列表
+	const regex = /^(\[[\da-fA-F:]+\]|[\d.]+|[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*)(?::(\d+))?(?:#(.+))?$/;
+	for (const addr of 优选IP列表) {
+		const m = addr.match(regex);
+		if (!m) continue;
+		const ip = m[1], port = parseInt(m[2]) || 443, rawAlias = m[3] || ip;
+		const name = 格式化节点名称(rawAlias);
+		const node = { name, type: 'vless', server: ip.replace(/^\[|\]$/g,''), port, uuid, tls: true, 'skip-cert-verify': !!config.跳过证书验证, network: 'ws', 'ws-opts': { path, headers: { Host: host } }, 'client-fingerprint': fp, servername: host };
+		if (echEnabled) node['ech-opts'] = { enable: true };
+		proxies.push(node);
+		proxyNames.push(name);
+	}
+
+	// 去重名字
+	const nameCount = {};
+	for (let i = 0; i < proxyNames.length; i++) {
+		const base = proxyNames[i];
+		nameCount[base] = (nameCount[base] || 0) + 1;
+		if (nameCount[base] > 1) {
+			const newName = base + ' ' + nameCount[base];
+			proxyNames[i] = newName;
+			proxies[i].name = newName;
+		}
+	}
+
+	const allNames = proxyNames.map(n => '      - "' + n.replace(/"/g, '\\"') + '"').join('\n');
+
+	return `# Cloudflare EdgeTunnel - Auto Generated
+# Updated: ${new Date().toISOString()}
+
+mixed-port: 7890
+allow-lan: true
+mode: rule
+log-level: info
+find-process-mode: strict
+unified-delay: true
+tcp-concurrent: true
+
+dns:
+  enable: true
+  listen: :1053
+  ipv6: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "*.direct"
+    - "*.msftconnecttest.com"
+    - "*.msftncsi.com"
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+
+proxies:
+${proxies.map(p => '  - ' + JSON.stringify(p)).join('\n')}
+
+proxy-groups:
+  - name: "🚀 节点选择"
+    type: select
+    proxies:
+      - "♻️ 自动选择"
+      - "🔯 故障转移"
+      - "DIRECT"
+${allNames}
+
+  - name: "♻️ 自动选择"
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+    proxies:
+${allNames}
+
+  - name: "🔯 故障转移"
+    type: fallback
+    url: http://www.gstatic.com/generate_204
+    interval: 180
+    proxies:
+${allNames}
+
+  - name: "🎯 全球直连"
+    type: select
+    proxies:
+      - "DIRECT"
+      - "🚀 节点选择"
+
+rules:
+  - GEOSITE,private,DIRECT
+  - GEOSITE,cn,DIRECT
+  - GEOIP,private,DIRECT,no-resolve
+  - GEOIP,cn,DIRECT,no-resolve
+  - GEOSITE,geolocation-!cn,🚀 节点选择
+  - MATCH,🚀 节点选择`;
+}
+
+function 生成原生SingboxJSON(优选IP列表, 其他节点文本, config, 协议类型) {
+	const uuid = config.UUID;
+	const host = config.HOST;
+	const path = config.完整节点路径 || '/?ed=2560';
+	const fp = config.Fingerprint || 'chrome';
+	const outbounds = [];
+	const tags = [];
+
+	const allLinks = 其他节点文本 ? 其他节点文本.split('\n').filter(l => l.trim()) : [];
+	for (const link of allLinks) {
+		try {
+			const u = new URL(link.replace('vless://', 'http://'));
+			const name = decodeURIComponent(u.hash.slice(1)) || u.hostname;
+			outbounds.push({ type:'vless', tag:name, server:u.hostname.replace(/^\[|\]$/g,''), server_port:parseInt(u.port)||443, uuid, tls:{enabled:true,server_name:host,utls:{enabled:true,fingerprint:fp}}, transport:{type:'ws',path,headers:{Host:host}} });
+			tags.push(name);
+		} catch(e) {}
+	}
+
+	const regex = /^(\[[\da-fA-F:]+\]|[\d.]+|[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*)(?::(\d+))?(?:#(.+))?$/;
+	for (const addr of 优选IP列表) {
+		const m = addr.match(regex);
+		if (!m) continue;
+		const ip = m[1], port = parseInt(m[2]) || 443, rawAlias = m[3] || ip;
+		const name = 格式化节点名称(rawAlias);
+		outbounds.push({ type:'vless', tag:name, server:ip.replace(/^\[|\]$/g,''), server_port:port, uuid, tls:{enabled:true,server_name:host,utls:{enabled:true,fingerprint:fp}}, transport:{type:'ws',path,headers:{Host:host}} });
+		tags.push(name);
+	}
+
+	// 去重
+	const nameCount = {};
+	for (let i = 0; i < tags.length; i++) {
+		nameCount[tags[i]] = (nameCount[tags[i]] || 0) + 1;
+		if (nameCount[tags[i]] > 1) { const nn = tags[i]+' '+nameCount[tags[i]]; tags[i]=nn; outbounds[i].tag=nn; }
+	}
+
+	return JSON.stringify({
+		log: { level: 'info', timestamp: true },
+		dns: { servers: [
+			{ tag:'remote', address:'https://dns.google/dns-query', detour:'select' },
+			{ tag:'local', address:'https://dns.alidns.com/dns-query', detour:'direct' },
+			{ tag:'block', address:'rcode://success' }
+		], rules: [
+			{ geosite:['cn'], server:'local' },
+			{ geosite:['geolocation-!cn'], server:'remote' }
+		], strategy: 'prefer_ipv4' },
+		inbounds: [{ type:'mixed', tag:'mixed-in', listen:'127.0.0.1', listen_port:7890 }],
+		outbounds: [
+			{ type:'selector', tag:'select', outbounds:['auto','fallback','direct',...tags] },
+			{ type:'urltest', tag:'auto', outbounds:[...tags], url:'http://www.gstatic.com/generate_204', interval:'3m', tolerance:50 },
+			{ type:'urltest', tag:'fallback', outbounds:[...tags], url:'http://www.gstatic.com/generate_204', interval:'3m' },
+			...outbounds,
+			{ type:'direct', tag:'direct' },
+			{ type:'block', tag:'block' },
+			{ type:'dns', tag:'dns-out' }
+		],
+		route: { rules: [
+			{ protocol:'dns', outbound:'dns-out' },
+			{ geosite:['cn'], geoip:['cn','private'], outbound:'direct' },
+			{ geosite:['geolocation-!cn'], outbound:'select' }
+		], final:'select', auto_detect_interface:true }
+	}, null, 2);
+}
+
+function 格式化节点名称(rawAlias) {
+	const upper = rawAlias.toUpperCase();
+	let suffix = '';
+	if (upper.includes('优选') || upper.includes('PRO') || upper.includes('VIP')) suffix = ' 优选';
+	else if (upper.includes('应急') || upper.includes('备用')) suffix = ' 保障';
+	let base = '';
+	if (upper.includes('HK') || upper.includes('香港')) base = 'Cloudflare 🇭🇰 香港';
+	else if (upper.includes('TW') || upper.includes('台湾')) base = 'Cloudflare 🇹🇼 台湾';
+	else if (upper.includes('JP') || upper.includes('日本')) base = 'Cloudflare 🇯🇵 日本';
+	else if (upper.includes('US') || upper.includes('美国')) base = 'Cloudflare 🇺🇸 美国';
+	else if (upper.includes('SG') || upper.includes('新加坡')) base = 'Cloudflare 🇸🇬 新加坡';
+	else if (upper.includes('KR') || upper.includes('韩国')) base = 'Cloudflare 🇰🇷 韩国';
+	else if (upper.includes('UK') || upper.includes('GB') || upper.includes('英国')) base = 'Cloudflare 🇬🇧 英国';
+	else if (upper.includes('DE') || upper.includes('德国')) base = 'Cloudflare 🇩🇪 德国';
+	else if (upper.includes('FR') || upper.includes('法国')) base = 'Cloudflare 🇫🇷 法国';
+	else if (upper.includes('FI') || upper.includes('芬兰')) base = 'Cloudflare 🇫🇮 芬兰';
+	else if (upper.includes('NL') || upper.includes('荷兰')) base = 'Cloudflare 🇳🇱 荷兰';
+	else if (upper.includes('RU') || upper.includes('俄罗斯')) base = 'Cloudflare 🇷🇺 俄罗斯';
+	else if (upper.includes('TR') || upper.includes('土耳其')) base = 'Cloudflare 🇹🇷 土耳其';
+	else if (upper.includes('VN') || upper.includes('越南')) base = 'Cloudflare 🇻🇳 越南';
+	else if (upper.includes('IL') || upper.includes('以色列')) base = 'Cloudflare 🇮🇱 以色列';
+	else if (upper.includes('IN') || upper.includes('印度')) base = 'Cloudflare 🇮🇳 印度';
+	else if (upper.includes('SE') || upper.includes('瑞典')) base = 'Cloudflare 🇸🇪 瑞典';
+	else if (upper.includes('电信')) { base = 'Cloudflare 🇨🇳 电信优选'; suffix = ''; }
+	else if (upper.includes('联通')) { base = 'Cloudflare 🇨🇳 联通优选'; suffix = ''; }
+	else if (upper.includes('移动')) { base = 'Cloudflare 🇨🇳 移动优选'; suffix = ''; }
+	else if (upper.includes('CFNAT')) base = 'Cloudflare 🌐 CFNAT';
+	else base = 'Cloudflare 🌐 ' + rawAlias.replace(/优选|备用|应急|PRO|VIP/gi, '').trim();
+	return base + suffix;
+}
+
+};
     
     
   </script> 
